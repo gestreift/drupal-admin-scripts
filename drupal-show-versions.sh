@@ -6,6 +6,14 @@
 
 OUTFILE=$HOME/show-module-versions.log
 
+# Return 1 if element exists in array
+containsElement () {
+  local e
+  for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 1; done
+  return 0
+}
+
+
 # Purge output file
 echo > $OUTFILE
 
@@ -14,19 +22,28 @@ SITES=`grep -R -oh -E "^\s*DocumentRoot (.+)" /etc/apache2/sites-enabled`
 SITES=${SITES//DocumentRoot/}
 
 echo "We will check drupal projects in the following paths" >> $OUTFILE
-# TODO Remove duplicates
+# Print summary of projects we'll test. Ignore path if it occurs multiple times
 for file in $SITES; do
-  echo "-> " $file >> $OUTFILE
+  containsElement $file "${tasks[@]}"
+  if [ $? == "0" ]; then
+    tasks=("${tasks[@]}" $file)
+    echo "-> " $file >> $OUTFILE
+  else
+    echo Skipping duplicate $file.
+  fi
 done
 
-for file in $SITES; do
-# for file in *; do
-   if [ -d $file ]; then
-      echo  ++++++++++++ $file ++++++++++++++++++ >> $OUTFILE
-      pushd $file 
-      drush en -y update
-      drush pm-update --security-only -n >> $OUTFILE
-      popd 
-   fi
+for file in ${tasks[@]}; do
+  if [ -d $file ]; then
+    echo  ++++++++++++ $file ++++++++++++++++++
+    echo  ++++++++++++ $file ++++++++++++++++++ >> $OUTFILE
+    pushd $file 
+    drush en -y update
+    drush pm-update --security-only -n >> $OUTFILE
+    popd 
+  fi
 done
+
+
+
 
