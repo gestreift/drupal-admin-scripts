@@ -1,0 +1,46 @@
+# Ignore the following files in the project.
+
+# database dumps
+_dev/*.sql
+_dev/backups/*.sql
+_dev/tables-*
+_db_state/tables-*
+
+# Drupal temporary and host specific files
+sites/*/files/*
+sites/*/settings.php
+sites/*/local.settings.php
+sites/*.localhost
+sites/dev.*
+sites/dev
+
+# Backup files
+*~
+/backup
+
+# phpmyadmin
+phpmyadmin
+
+# automatically downloaded by devel module
+FirePHPCore
+
+# Ignore CVS and SVN files
+CVS
+.cvsignore
+*#*
+/.msg
+.svn
+
+# Zend debugger files
+/dummy.php
+
+# Eclipse stuff
+/.settings
+/.project
+/.buildpath
+
+# Netbeans stuff (Added by Lot)
+nbproject
+
+# google auth files
+/google*.html
