@@ -33,6 +33,8 @@ for file in $SITES; do
   fi
 done
 
+# TODO Print out actual hostname
+
 for file in ${tasks[@]}; do
   if [ -d $file ]; then
     echo  ++++++++++++ $file ++++++++++++++++++
