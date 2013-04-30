@@ -15,18 +15,19 @@
 ##
 ##
 
-tmpId=$(makepasswd --chars=10)
+tmpId=`makepasswd --chars=10`
 tmpDir=/tmp/drupal-$tmpId
 
 drushCmd=$1
 log=$2
 
-if [ -n "$log" ]; then
+if [ -z "$log" ]; then
 	log=$tmpDir/log
 fi
 
 mkdir $tmpDir
 
+echo "Executing Drupal Locate with $drushCmd (output: $tmpDir, log: $log)"
 /opt/drupal-admin-scripts/drupal-locate.sh $tmpDir/out $log $drushCmd
 
 rm -rf $tmpDir
