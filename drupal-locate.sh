@@ -71,7 +71,8 @@ for file in ${tasks[@]}; do
 				if [ -n "$todo" ]; then
 					echo "Executing drush $todo in $dirname"
 				    pushd $dirname > /dev/null
-						drush $todo
+				    	#FIXME: Das hier ist nicht elegant, aber lenny unterstützt kein drush :/
+						/opt/drush/drush $todo
 					popd > /dev/null
 
 					chown -hR www-data:www-data $dirname
