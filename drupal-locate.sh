@@ -3,7 +3,10 @@
 ##
 ## Locate Drupal
 ##
-## Findet alle lokalen Drupal-Instanzen innerhalb der Apache-VHosts-Konfiguration und export/dokumentiert diese
+## Findet alle lokalen Drupal-Instanzen innerhalb der Apache-VHosts-Konfiguration
+##
+## Aufruf:
+## drupal-locate.sh TrefferListe VHostsDoku (DrushKommando)
 ##
 ## Version: 0.0.1
 ## Author: Jonas Westphal (jw@yu.am)
@@ -14,6 +17,7 @@
 
 outfile=$1
 docfile=$2
+todo=$3
 
 # Return 1 if element exists in array
 containsElement () {
@@ -23,9 +27,8 @@ containsElement () {
 }
 
 
-# Purge output file
-echo > $outfile
-echo > $docfile
+# Purge output files
+rm -rf $outfile $docfile
 
 # Find all active web projects
 SITES=`grep -R -oh -E "^\s*DocumentRoot (.+)" /etc/apache2/sites-enabled`
@@ -64,6 +67,15 @@ for file in ${tasks[@]}; do
 			if [ -n "$isDrupal" ]; then
 				echo "Hello, world - Drupal found in $dirname"
 				echo $dirname >> $outfile
+
+				if [ -n "$todo" ]; then
+					echo "Executing drush $todo in $dirname"
+				    pushd $dirname > /dev/null
+						drush $todo
+					popd > /dev/null
+
+					chown -hR www-data:www-data $dirname
+				fi
 			else
 				echo "Whoopsie - No Drupal found in $dirname"
 			fi
