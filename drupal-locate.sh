@@ -6,7 +6,7 @@
 ## Findet alle lokalen Drupal-Instanzen innerhalb der Apache-VHosts-Konfiguration
 ##
 ## Aufruf:
-## drupal-locate.sh TrefferListe VHostsDoku (DrushKommando)
+## drupal-locate.sh TrefferListe VHostsDoku [DrushKommando]
 ##
 ## Version: 0.0.1
 ## Author: Jonas Westphal (jw@yu.am)
