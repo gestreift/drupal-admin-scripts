@@ -3,7 +3,7 @@
 ##
 ## Locate Drupal
 ##
-## Findet alle lokalen Drupal-Instanzen innerhalb der Apache-VHosts-Konfiguration und export diese
+## Findet alle lokalen Drupal-Instanzen innerhalb der Apache-VHosts-Konfiguration und export/dokumentiert diese
 ##
 ## Version: 0.0.1
 ## Author: Jonas Westphal (jw@yu.am)
@@ -42,16 +42,33 @@ for file in $SITES; do
 	fi
 done
 
-# Überprüfe rekursiv, wo eine settings.php vorliegt
+# Überprüfe rekursiv, ob/wo eine settings.php vorliegt
+#count=0
+
 for file in ${tasks[@]}; do
 	if [ -d $file ]; then
-		echo "Überprüfe $file"
-		isDrupal=$(find $file -name settings.php -exec grep drupal {} \;)
+		echo "Check $file"
 
-		if [ $isDrupal != "" ]
-			echo "Huhu drupal in $file"
-		else
-			echo "Kein drupal in $file"
-		fi
+		find $file -name settings.php | while read settingsFile
+
+		do
+			#FIXME: Zähler bauen
+			#count=`expr $count + 1`
+
+			echo "Found probably Drupal Project: $settingsFile"
+			dirname=${settingsFile%/*}
+
+			#TODO: Eine bessere Suchphrase als "drupal"
+			isDrupal=`(grep drupal $settingsFile)`
+
+			if [ -n "$isDrupal" ]; then
+				echo "Hello, world - Drupal found in $dirname"
+				echo $dirname >> $outfile
+			else
+				echo "Whoopsie - No Drupal found in $dirname"
+			fi
+		done
 	fi
 done
+
+#echo "Total $count Drupal Projects found"
