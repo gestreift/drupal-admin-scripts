@@ -52,20 +52,21 @@ for file in ${tasks[@]}; do
 	if [ -d $file ]; then
 		echo "Check $file"
 
-		find $file -name settings.php | while read settingsFile
+		find -L $file -name settings.php | while read settingsFile
 
 		do
+      # TODO: Skip VHost default and /var/www
 			#FIXME: Zähler bauen
 			#count=`expr $count + 1`
 
-			echo "Found probably Drupal Project: $settingsFile"
+			# echo "-> Found probably Drupal Project: $settingsFile"
 			dirname=${settingsFile%/*}
 
-			#TODO: Eine bessere Suchphrase als "drupal"
-			isDrupal=`(grep drupal $settingsFile)`
+			isDrupal=`(grep "update_free_access" $settingsFile)`
 
 			if [ -n "$isDrupal" ]; then
-				echo "Hello, world - Drupal found in $dirname"
+        # TODO: Check for duplicates
+				echo "-> Drupal found in $dirname"
 				echo $dirname >> $outfile
 
 				if [ -n "$todo" ]; then
