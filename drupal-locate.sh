@@ -6,7 +6,7 @@
 ## Findet alle lokalen Drupal-Instanzen innerhalb der Apache-VHosts-Konfiguration
 ##
 ## Aufruf:
-## drupal-locate.sh TrefferListe VHostsDoku [DrushKommando]
+## drupal-locate.sh found-list.outfile vhosts-summary.outfile [drushCommand]
 ##
 ## Version: 0.0.1
 ## Author: Jonas Westphal (jw@yu.am)
@@ -25,6 +25,17 @@ containsElement () {
   for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 1; done
   return 0
 }
+
+
+# Check for proper number of command line args.
+EXPECTED_ARGS=2
+E_BADARGS=65
+
+if [ $# -ne $EXPECTED_ARGS ]
+then
+  echo "Usage: `basename $0` found-list.outfile vhosts-summary.outfile [drushCommand]"
+  exit $E_BADARGS
+fi
 
 
 # Purge output files
