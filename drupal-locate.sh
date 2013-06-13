@@ -6,18 +6,21 @@
 ## Findet alle lokalen Drupal-Instanzen innerhalb der Apache-VHosts-Konfiguration
 ##
 ## Aufruf:
-## drupal-locate.sh found-list.outfile vhosts-summary.outfile [drushCommand]
+## drupal-locate.sh TrefferListe VHostsDoku [DrushKommando]
 ##
 ## Version: 0.0.1
-## Author: Jonas Westphal (jw@yu.am)
+## Author: Jonas Westphal (jw@yu.am), Stephan Grötschel <groetschel@zebralog.de>
 ##
 ## https://jw.is
 ##
 ##
 
+# TODO What is docfile, what is outfile?
 outfile=$1
 docfile=$2
 todo=$3
+
+DRUPAL_CMD=/opt/drush/drush
 
 # Return 1 if element exists in array
 containsElement () {
@@ -42,57 +45,63 @@ fi
 rm -rf $outfile $docfile
 
 # Find all active web projects
-SITES=`grep -R -oh -E "^\s*DocumentRoot (.+)" /etc/apache2/sites-enabled`
+# Search for the DocumentRoot path in active vhost configurations.
+SITES=`grep -R -oh -E "^\s*DocumentRoot \"?([a-zA-Z0-9_\/\.\-]+)\"?" /etc/apache2/sites-enabled`
+# Strip the strings DocumentRoot and quotes
 SITES=${SITES//DocumentRoot/}
+SITES=${SITES//\"/}
 
 # Print summary of projects we'll test. Ignore path if it occurs multiple times
 for file in $SITES; do
+	echo -n "Check if $file is duplicate...		"
 	containsElement $file "${tasks[@]}"
 	if [ $? == "0" ]; then
 		tasks=("${tasks[@]}" $file)
+		echo "No."
 		echo "-> " $file >> $docfile
 	else
-		echo Skipping duplicate directory $file.
+		echo "Yes - Skipping duplicate."
 	fi
 done
+
+echo ---
 
 # Überprüfe rekursiv, ob/wo eine settings.php vorliegt
 #count=0
 
 for file in ${tasks[@]}; do
 	if [ -d $file ]; then
-		echo "Check $file"
+		# echo "Check if $file is drupal installation."
 
 		find -L $file -name settings.php | while read settingsFile
 
 		do
-      # TODO: Skip VHost default and /var/www
+			#TODO: Skip VHost default and /var/www
 			#FIXME: Zähler bauen
 			#count=`expr $count + 1`
 
-			# echo "-> Found probably Drupal Project: $settingsFile"
 			dirname=${settingsFile%/*}
-
 			isDrupal=`(grep "update_free_access" $settingsFile)`
 
 			if [ -n "$isDrupal" ]; then
-        # TODO: Check for duplicates
-				echo "-> Drupal found in $dirname"
+				echo "Drupal found in $dirname"
 				echo $dirname >> $outfile
 
 				if [ -n "$todo" ]; then
-					echo "Executing drush $todo in $dirname"
-				    pushd $dirname > /dev/null
-				    	#FIXME: Das hier ist nicht elegant, aber lenny unterstützt kein drush :/
-						/opt/drush/drush $todo
+					echo "-> Executing drush $todo"
+					pushd $dirname > /dev/null
+					#FIXME: Das hier ist nicht elegant, aber lenny unterstützt kein drush :/
+					$DRUPAL_CMD $todo
 					popd > /dev/null
 
-					chown -hR www-data:www-data $dirname
+					# chown -hR www-data:www-data $dirname
 				fi
 			else
-				echo "Whoopsie - No Drupal found in $dirname"
+				echo "[Warning] No Drupal found in $dirname"
 			fi
 		done
+	else
+		echo "Not checking $file"
 	fi
 done
 
