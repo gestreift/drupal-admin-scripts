@@ -34,7 +34,7 @@ containsElement () {
 EXPECTED_ARGS=2
 E_BADARGS=65
 
-if [ $# -ne $EXPECTED_ARGS ]
+if [ $# -lt $EXPECTED_ARGS ]
 then
   echo "Usage: `basename $0` found-list.outfile vhosts-summary.outfile [drushCommand]"
   exit $E_BADARGS
@@ -94,7 +94,7 @@ for file in ${tasks[@]}; do
 					$DRUPAL_CMD $todo
 					popd > /dev/null
 
-					# chown -hR www-data:www-data $dirname
+					chown -hR www-data:www-data $dirname
 				fi
 			else
 				echo "[Warning] No Drupal found in $dirname"
