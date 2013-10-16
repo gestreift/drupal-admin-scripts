@@ -73,7 +73,7 @@ for file in ${tasks[@]}; do
 	if [ -d $file ]; then
 		# echo "Check if $file is drupal installation."
 
-		find -L $file -name settings.php | while read settingsFile 2&>/dev/null
+		find -L $file -name settings.php 2>/dev/null | while read settingsFile
 
 		do
 			#TODO: Skip VHost default and /var/www
@@ -88,7 +88,7 @@ for file in ${tasks[@]}; do
 				echo $dirname >> $outfile
 
 				if [ -n "$drush_task" ]; then
-					echo "-> Executing drush $drush_task"
+					echo "Running drush $drush_task"
 					pushd $dirname > /dev/null
 					#FIXME: Das hier ist nicht elegant, aber lenny unterstützt kein drush :/
 					$DRUPAL_CMD $drush_task
