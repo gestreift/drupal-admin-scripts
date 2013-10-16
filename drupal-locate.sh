@@ -18,7 +18,7 @@
 # TODO What is docfile, what is outfile?
 outfile=$1
 docfile=$2
-todo=$3
+drush_task=$3
 
 DRUPAL_CMD=/opt/drush/drush
 
@@ -73,7 +73,7 @@ for file in ${tasks[@]}; do
 	if [ -d $file ]; then
 		# echo "Check if $file is drupal installation."
 
-		find -L $file -name settings.php | while read settingsFile
+		find -L $file -name settings.php | while read settingsFile 2&>/dev/null
 
 		do
 			#TODO: Skip VHost default and /var/www
@@ -87,14 +87,15 @@ for file in ${tasks[@]}; do
 				echo "Drupal found in $dirname"
 				echo $dirname >> $outfile
 
-				if [ -n "$todo" ]; then
-					echo "-> Executing drush $todo"
+				if [ -n "$drush_task" ]; then
+					echo "-> Executing drush $drush_task"
 					pushd $dirname > /dev/null
 					#FIXME: Das hier ist nicht elegant, aber lenny unterstützt kein drush :/
-					$DRUPAL_CMD $todo
+					$DRUPAL_CMD $drush_task
 					popd > /dev/null
 
 					chown -hR www-data:www-data $dirname
+					echo
 				fi
 			else
 				echo "[Warning] No Drupal found in $dirname"
