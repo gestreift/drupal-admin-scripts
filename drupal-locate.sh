@@ -94,7 +94,8 @@ for file in ${tasks[@]}; do
 					$DRUPAL_CMD $drush_task
 					popd > /dev/null
 
-					chown -hR www-data:www-data $dirname
+					# Don't chown because it is not expected by the user.
+					# chown -hR www-data:www-data $dirname
 					echo
 				fi
 			else
