@@ -94,7 +94,7 @@ for file in ${tasks[@]}; do
 					$DRUPAL_CMD $drush_task
 					popd > /dev/null
 
-					chown -hR www-data:www-data $dirname
+					# chown -hR www-data:www-data $dirname
 					echo
 				fi
 			else
