@@ -46,7 +46,7 @@ rm -rf $outfile $docfile
 
 # Find all active web projects
 # Search for the DocumentRoot path in active vhost configurations.
-SITES=`grep -R -oh -E "^\s*DocumentRoot \"?([a-zA-Z0-9_\/\.\-]+)\"?" /etc/apache2/sites-enabled`
+SITES=`grep -R -oh -E "^[   ]*DocumentRoot \"?([a-zA-Z0-9_\/\.\-]+)\"?" /etc/apache2/sites-enabled`
 # Strip the strings DocumentRoot and quotes
 SITES=${SITES//DocumentRoot/}
 SITES=${SITES//\"/}
@@ -94,8 +94,8 @@ for file in ${tasks[@]}; do
 					$DRUPAL_CMD $drush_task
 					popd > /dev/null
 
+					# Don't chown because it is not expected by the user.
 					# chown -hR www-data:www-data $dirname
-					echo
 				fi
 			else
 				echo "[Warning] No Drupal found in $dirname"

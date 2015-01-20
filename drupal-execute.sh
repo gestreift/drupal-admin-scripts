@@ -24,8 +24,7 @@ if [ -z "$SCRIPT_PATH" ] ; then
 fi
 echo "$SCRIPT_PATH"
 
-tmpId=`makepasswd --chars=10`
-tmpDir=/tmp/drupal-$tmpId
+tmpDir=`tempfile -p drupal`
 
 drushCmd=$1
 log=$2
