@@ -24,7 +24,7 @@ if [ -z "$SCRIPT_PATH" ] ; then
 fi
 echo "$SCRIPT_PATH"
 
-tmpDir=`tempfile -p drupal`
+tmpDir=`mktemp -d`
 
 drushCmd=$1
 log=$2
@@ -32,8 +32,6 @@ log=$2
 if [ -z "$log" ]; then
 	log=$tmpDir/log
 fi
-
-mkdir $tmpDir
 
 echo "Executing Drupal Locate with $drushCmd (output: $tmpDir, log: $log)"
 $SCRIPT_PATH/drupal-locate.sh $tmpDir/out $log $drushCmd
