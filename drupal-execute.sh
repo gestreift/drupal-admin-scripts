@@ -15,6 +15,15 @@
 ##
 ##
 
+SCRIPT_PATH="`dirname \"$0\"`"              # relative
+SCRIPT_PATH="`( cd \"$SCRIPT_PATH\" && pwd )`"  # absolutized and normalized
+if [ -z "$SCRIPT_PATH" ] ; then
+  # error; for some reason, the path is not accessible
+  # to the script (e.g. permissions re-evaled after suid)
+  exit 1  # fail
+fi
+echo "$SCRIPT_PATH"
+
 tmpId=`makepasswd --chars=10`
 tmpDir=/tmp/drupal-$tmpId
 
@@ -28,6 +37,6 @@ fi
 mkdir $tmpDir
 
 echo "Executing Drupal Locate with $drushCmd (output: $tmpDir, log: $log)"
-/opt/drupal-admin-scripts/drupal-locate.sh $tmpDir/out $log $drushCmd
+$SCRIPT_PATH/drupal-locate.sh $tmpDir/out $log $drushCmd
 
 rm -rf $tmpDir

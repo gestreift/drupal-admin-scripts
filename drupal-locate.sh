@@ -20,7 +20,7 @@ outfile=$1
 docfile=$2
 drush_task=$3
 
-DRUPAL_CMD=/opt/drush/drush
+DRUPAL_CMD=drush
 
 # Return 1 if element exists in array
 containsElement () {
