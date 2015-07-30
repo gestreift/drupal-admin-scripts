@@ -9,14 +9,16 @@
 $path = '/etc/apache2/sites-enabled';
 
 $files = scandir($path);
+$count = 0;
 foreach($files as $filename) {
   if ($site = parseVhostFile($path . '/' . $filename)) {
     printSite($site);
     echo "\n";
+    $count++;
   }
 }
 
-echo 'Counting ' . count($site) . ' sites.' . "\n";
+echo "Counting $count sites.\n";
 
 function parseVhostFile($file) {
   $ret = new stdClass();
