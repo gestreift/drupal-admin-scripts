@@ -10,13 +10,17 @@ $path = '/etc/apache2/sites-enabled';
 
 $files = scandir($path);
 foreach($files as $filename) {
-  $site = parseVhostFile($path . '/' . $filename);
-  print_r($site);
-  echo "\n";
+  if ($site = parseVhostFile($path . '/' . $filename)) {
+    printSite($site);
+    echo "\n";
+  }
 }
+
+echo 'Counting ' . count($site) . ' sites.' . "\n";
 
 function parseVhostFile($file) {
   $ret = new stdClass();
+  $ret->vhostFile = $file;
 
   // Get the file contents, assuming the file to be readable (and exist)
   $contents = file_get_contents($file);
@@ -36,5 +40,21 @@ function parseVhostFile($file) {
     }
   }
 
-  return $ret;
+  // A site needs to have at least DocumentRoot and ServerName.
+  if (empty($ret->ServerName) || empty($ret->DocumentRoot)) {
+    return FALSE;
+  }
+  else {
+    return $ret;
+  }
+}
+
+function printSite($site) {
+  echo  $site->ServerName . "\n";
+  echo "  ServerName:  $site->ServerName" . "\n";
+  if (isset($site->ServerAlias)) {
+    echo "  ServerAlias: $site->ServerAlias\n";
+  }
+  echo "  DocumentRoot: $site->DocumentRoot\n";
+  echo '  Config: ' . basename($site->vhostFile) . "\n";
 }
