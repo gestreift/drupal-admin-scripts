@@ -15,10 +15,8 @@
 ##
 ##
 
-# TODO What is docfile, what is outfile?
 outfile=$1
-docfile=$2
-drush_task=$3
+drush_task=$2
 
 DRUPAL_CMD=drush
 
@@ -31,18 +29,14 @@ containsElement () {
 
 
 # Check for proper number of command line args.
-EXPECTED_ARGS=2
+EXPECTED_ARGS=1
 E_BADARGS=65
 
 if [ $# -lt $EXPECTED_ARGS ]
 then
-  echo "Usage: `basename $0` found-list.outfile vhosts-summary.outfile [drushCommand]"
+  echo "Usage: `basename $0` found-list.outfile [drushCommand]"
   exit $E_BADARGS
 fi
-
-
-# Purge output files
-rm -rf $outfile $docfile
 
 # Find all active web projects
 # Search for the DocumentRoot path in active vhost configurations.
