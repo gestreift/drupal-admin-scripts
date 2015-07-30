@@ -10,25 +10,29 @@ $path = '/etc/apache2/sites-enabled';
 
 $files = scandir($path);
 foreach($files as $filename) {
-  echo(searchInFile($path . '/' . $filename));
+  $site = parseVhostFile($path . '/' . $filename);
+  print_r($site);
   echo "\n";
 }
 
-function searchInFile($file) {
+function parseVhostFile($file) {
+  $ret = new stdClass();
+
   // Get the file contents, assuming the file to be readable (and exist)
   $contents = file_get_contents($file);
   
-  $pattern = 'ServerName';
-  $pattern = preg_quote($pattern, '/');
+  $pattern = 'ServerName ([A-Z0-9a-z\-\.]+)';
+  // $pattern = preg_quote($pattern, '/');
   // Finalise the regular expression, matching the whole line
-  $pattern = "/^.*$pattern.*\$/m";
+  $pattern = "/$pattern/";
 
   // Search, and store all matching occurences in $matches
   if(preg_match_all($pattern, $contents, $matches)){
-     return($matches[0][0]);
+    if (isset($matches[1][0])) {
+      $ret->ServerName = $matches[1][0];
+    }
   }
-  else {
-    return '';
-  }
+
+  return $ret;
 
 }
