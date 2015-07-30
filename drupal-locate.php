@@ -6,7 +6,16 @@
  * Usage example: drupal-locate.php /etc/apache2/sites-enabled
  */
 
-$path = '/etc/apache2/sites-enabled';
+if (!isset($argv) || !isset($argv[1])) {
+  usage();
+  return;
+}
+
+$path = $argv[1];
+if (!file_exists($path)) {
+  echo "Directory does not exist.\n";
+  return;
+}
 
 $files = scandir($path);
 $count = 0;
@@ -59,4 +68,9 @@ function printSite($site) {
   }
   echo "  DocumentRoot: $site->DocumentRoot\n";
   echo '  Config: ' . basename($site->vhostFile) . "\n";
+}
+
+function usage() {
+  echo "Usage:\n";
+  echo '  ' . basename(__FILE__) . ' [path-to-apache-vhost-files]' . "\n";
 }
