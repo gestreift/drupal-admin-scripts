@@ -11,23 +11,44 @@ if (!isset($argv) || !isset($argv[1])) {
   return;
 }
 
+// Get vhost path from command line argument
 $path = $argv[1];
 if (!file_exists($path)) {
   echo "Directory does not exist.\n";
   return;
 }
 
+// Process additional cmd parameters
+$csv = FALSE;
+foreach($argv as $argument) {
+  if ($argument == '--csv') {
+    $csv = TRUE;
+  }
+}
+
+// CSV header
+if ($csv) {
+  echo "ServerName;ServerAlias;DocumentRoot;VHostConfig\n";
+}
+
 $files = scandir($path);
 $count = 0;
 foreach($files as $filename) {
   if ($site = parseVhostFile($path . '/' . $filename)) {
-    printSite($site);
+    if ($csv) {
+      printSiteToCSV($site);
+    }
+    else {
+      printSite($site);
+    }
     echo "\n";
     $count++;
   }
 }
 
-echo "Counting $count sites.\n";
+if (!$csv) {
+  echo "Counting $count sites.\n";
+}
 
 function parseVhostFile($file) {
   $ret = new stdClass();
@@ -68,6 +89,18 @@ function printSite($site) {
   }
   echo "  DocumentRoot: $site->DocumentRoot\n";
   echo '  Config: ' . basename($site->vhostFile) . "\n";
+}
+
+function printSiteToCSV($site) {
+  echo  $site->ServerName . ";";
+  if (isset($site->ServerAlias)) {
+    echo "$site->ServerAlias;";
+  }
+  else {
+    echo ';';
+  }
+  echo "$site->DocumentRoot;";
+  echo basename($site->vhostFile) . ";";
 }
 
 function usage() {
