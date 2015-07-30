@@ -53,19 +53,17 @@ SITES=${SITES//DocumentRoot/}
 SITES=${SITES//\"/}
 
 # Print summary of projects we'll test. Ignore path if it occurs multiple times
+echo "-- Checking for duplicates."
 for file in $SITES; do
-	echo -n "Check if $file is duplicate...		"
 	containsElement $file "${tasks[@]}"
 	if [ $? == "0" ]; then
 		tasks=("${tasks[@]}" $file)
-		echo "No."
-		echo "-> " $file >> $docfile
 	else
-		echo "Yes - Skipping duplicate."
+		echo "Skipping $file because it's a duplicate."
 	fi
 done
 
-echo ---
+echo "-- Find active drupal installations"
 
 # Überprüfe rekursiv, ob/wo eine settings.php vorliegt
 #count=0
