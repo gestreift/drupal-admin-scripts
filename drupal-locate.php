@@ -20,19 +20,21 @@ function parseVhostFile($file) {
 
   // Get the file contents, assuming the file to be readable (and exist)
   $contents = file_get_contents($file);
-  
-  $pattern = 'ServerName ([A-Z0-9a-z\-\.]+)';
-  // $pattern = preg_quote($pattern, '/');
-  // Finalise the regular expression, matching the whole line
-  $pattern = "/$pattern/";
 
-  // Search, and store all matching occurences in $matches
-  if(preg_match_all($pattern, $contents, $matches)){
-    if (isset($matches[1][0])) {
-      $ret->ServerName = $matches[1][0];
+  $patterns = array(
+    'ServerName'    => '/ServerName\s+([A-Z0-9a-z\-\.]+)/',
+    'ServerAlias'   => '/ServerAlias\s+([A-Z0-9a-z\-\. ]+)/',
+    'DocumentRoot'  => '/DocumentRoot\s+(.+)/'
+  );
+
+  foreach ($patterns as $key => $pattern) {
+    // Search, and store all matching occurences in $matches
+    if(preg_match_all($pattern, $contents, $matches)){
+      if (isset($matches[1][0])) {
+        $ret->$key = $matches[1][0];
+      }
     }
   }
 
   return $ret;
-
 }
