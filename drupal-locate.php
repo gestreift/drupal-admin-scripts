@@ -139,14 +139,13 @@ function checkSiteHosts($site) {
       continue;
     }
     foreach($site->$key as $host) {
-      set_error_handler(function() { /* ignore errors */ }, E_WARNING);
-      if (file_get_contents('http://' . $host)) {
-        $host_health[$host] = TRUE;
-      }
-      else {
-        $host_health[$host] = FALSE;
-      }
-      restore_error_handler();
+      $url = 'http://' . $host;
+      $handle = curl_init($url);
+      curl_setopt($handle,  CURLOPT_RETURNTRANSFER, TRUE);
+      $response = curl_exec($handle);
+      $httpCode = curl_getinfo($handle, CURLINFO_HTTP_CODE);
+      $host_health[$host] = $httpCode;
+      curl_close($handle);
     }
   }
 
@@ -157,7 +156,7 @@ function printSite($site) {
   echo  $site->ServerName[0] . "\n";
   echo "  ServerName:  " . hostnamesToString($site->ServerName, $site) . "\n";
   if (isset($site->ServerAlias) && !empty($site->ServerAlias)) {
-    echo "  ServerAlias: " . implode(", ", $site->ServerAlias) . "\n";
+    echo "  ServerAlias: " . hostnamesToString($site->ServerAlias, $site) . "\n";
   }
   echo "  DocumentRoot: $site->DocumentRoot\n";
   echo '  Config: ' . basename($site->vhostFile) . "\n";
@@ -172,9 +171,10 @@ function printSite($site) {
  *        Site description.
  */
 function hostnamesToString($hostnames, $site) {
+  $response_ok = array('200');
   foreach($hostnames as &$host) {
-    if (!$site->health->hosts[$host]) {
-      $host .= '*';
+    if ( !in_array($site->health->hosts[$host], $response_ok) ) {
+      $host .= '[' . $site->health->hosts[$host] . ']';
     }
   }
   return implode(', ', $hostnames);
