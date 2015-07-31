@@ -3,8 +3,13 @@
 /**
  * Find running websites in apache vhost configuration.
  *
- * Usage example: drupal-locate.php /etc/apache2/sites-enabled
+ * Usage example: drupal-locate.php /etc/apache2/sites-enabled [--csv]
  */
+
+// TODO: --group-by-pattern=zebrarchive
+//       will sort vhosts by zebrarchive = 0/1
+
+// TODO Update status (updates vs. security-only)
 
 if (!isset($argv) || !isset($argv[1])) {
   usage();
@@ -17,9 +22,6 @@ if (!file_exists($path)) {
   echo "Directory does not exist.\n";
   return;
 }
-
-// TODO: --group-by-pattern=zebrarchive
-//       will sort vhosts by zebrarchive = 0/1
 
 // Process additional cmd parameters
 $csv = FALSE;
@@ -119,7 +121,6 @@ function checkSiteHealth(&$site) {
   // Test hostname availability.
   $health->hosts = checkSiteHosts($site);
 
-  // TODO Update status (updates vs. security-only)
   $site->health = $health;
 }
 
@@ -194,5 +195,5 @@ function printSiteToCSV($site) {
 
 function usage() {
   echo "Usage:\n";
-  echo '  ' . basename(__FILE__) . ' [path-to-apache-vhost-files]' . "\n";
+  echo '  ' . basename(__FILE__) . ' [path-to-apache-vhost-files] --csv' . "\n";
 }
