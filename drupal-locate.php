@@ -54,8 +54,8 @@ if (!$csv) {
 }
 
 function parseVhostFile($file) {
-  $ret = new stdClass();
-  $ret->vhostFile = $file;
+  $site = new stdClass();
+  $site->vhostFile = $file;
 
   // Get the file contents, assuming the file to be readable (and exist)
   $contents = file_get_contents($file);
@@ -71,16 +71,16 @@ function parseVhostFile($file) {
     if(preg_match_all($pattern, $contents, $matches)){
       // ServerName & ServerAlias as an array as one file can have multiple vhosts.
       if ($key == 'ServerName' || $key == 'ServerAlias') {
-        $ret->$key = $matches[1];
+        $site->$key = $matches[1];
       }
-      if (!isset($ret->$key)) {
-        $ret->$key = $matches[1][0];
+      if (!isset($site->$key)) {
+        $site->$key = $matches[1][0];
       }
     }
   }
 
   // A site needs to have at least DocumentRoot and ServerName.
-  if (empty($ret->ServerName) || empty($ret->DocumentRoot)) {
+  if (empty($site->ServerName) || empty($site->DocumentRoot)) {
     return FALSE;
   }
 
@@ -90,21 +90,21 @@ function parseVhostFile($file) {
   foreach ($explode_keys as $key) {
     $hosts_array = array();
 
-    if (!isset($ret->$key)) {
+    if (!isset($site->$key)) {
       continue;
     }
 
-    foreach($ret->$key as $hosts_string) {
+    foreach($site->$key as $hosts_string) {
       // Use regex instead of explode()
       $hosts_array = array_merge($hosts_array, explode(' ', $hosts_string));
     }
-    $ret->$key = $hosts_array;
+    $site->$key = $hosts_array;
   }
 
-  return $ret;
+  return $site;
 }
 
-function checkSiteHealth() {
+function checkSiteHealth(&$site) {
   // TODO URL availability
   // TODO Update status (updates vs. security-only)
 }
