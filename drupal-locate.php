@@ -38,12 +38,15 @@ $files = scandir($path);
 $count = 0;
 foreach($files as $filename) {
   if ($site = parseVhostFile($path . '/' . $filename)) {
+    checkSiteHealth($site);
+
     if ($csv) {
       printSiteToCSV($site);
     }
     else {
       printSite($site);
     }
+
     echo "\n";
     $count++;
   }
@@ -104,19 +107,77 @@ function parseVhostFile($file) {
   return $site;
 }
 
+/**
+ * Return site healt as an object.
+ *
+ * @param object &$site
+ *        Description of the site.
+ */
 function checkSiteHealth(&$site) {
-  // TODO URL availability
+  $health = new stdClass();
+
+  // Test hostname availability.
+  $health->hosts = checkSiteHosts($site);
+
   // TODO Update status (updates vs. security-only)
+  $site->health = $health;
+}
+
+/**
+ * Test if the hostnames of a site are available.
+ *
+ * @param [type] $site
+ *
+ * @return [type]
+ */
+function checkSiteHosts($site) {
+  $host_health = array();
+
+  $host_keys = array('ServerName', 'ServerAlias');
+  foreach($host_keys as $key) {
+    if (!isset($site->$key)) {
+      continue;
+    }
+    foreach($site->$key as $host) {
+      set_error_handler(function() { /* ignore errors */ }, E_WARNING);
+      if (file_get_contents('http://' . $host)) {
+        $host_health[$host] = TRUE;
+      }
+      else {
+        $host_health[$host] = FALSE;
+      }
+      restore_error_handler();
+    }
+  }
+
+  return $host_health;
 }
 
 function printSite($site) {
   echo  $site->ServerName[0] . "\n";
-  echo "  ServerName:  " . implode(', ', $site->ServerName) . "\n";
+  echo "  ServerName:  " . hostnamesToString($site->ServerName, $site) . "\n";
   if (isset($site->ServerAlias) && !empty($site->ServerAlias)) {
     echo "  ServerAlias: " . implode(", ", $site->ServerAlias) . "\n";
   }
   echo "  DocumentRoot: $site->DocumentRoot\n";
   echo '  Config: ' . basename($site->vhostFile) . "\n";
+}
+
+/**
+ * Print list of hostnames
+ *
+ * @param array  $hostnames
+ *        List of hostnames.
+ * @param object $site
+ *        Site description.
+ */
+function hostnamesToString($hostnames, $site) {
+  foreach($hostnames as &$host) {
+    if (!$site->health->hosts[$host]) {
+      $host .= '*';
+    }
+  }
+  return implode(', ', $hostnames);
 }
 
 function printSiteToCSV($site) {
