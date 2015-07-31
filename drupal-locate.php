@@ -18,6 +18,9 @@ if (!file_exists($path)) {
   return;
 }
 
+// TODO: --group-by-pattern=zebrarchive
+//       will sort vhosts by zebrarchive = 0/1
+
 // Process additional cmd parameters
 $csv = FALSE;
 foreach($argv as $argument) {
@@ -66,7 +69,11 @@ function parseVhostFile($file) {
   foreach ($patterns as $key => $pattern) {
     // Search, and store all matching occurences in $matches
     if(preg_match_all($pattern, $contents, $matches)){
-      if (isset($matches[1][0])) {
+      // ServerName & ServerAlias as an array as one file can have multiple vhosts.
+      if ($key == 'ServerName' || $key == 'ServerAlias') {
+        $ret->$key = $matches[1];
+      }
+      if (!isset($ret->$key)) {
         $ret->$key = $matches[1][0];
       }
     }
@@ -76,16 +83,37 @@ function parseVhostFile($file) {
   if (empty($ret->ServerName) || empty($ret->DocumentRoot)) {
     return FALSE;
   }
-  else {
-    return $ret;
+
+  // Convert space separated hosts into flat array because we didn't figure out
+  // how to get a flat array with regex (like /ServerAlias ((HOSTPATTERN+ )+)/.
+  $explode_keys = array('ServerName', 'ServerAlias');
+  foreach ($explode_keys as $key) {
+    $hosts_array = array();
+
+    if (!isset($ret->$key)) {
+      continue;
+    }
+
+    foreach($ret->$key as $hosts_string) {
+      // Use regex instead of explode()
+      $hosts_array = array_merge($hosts_array, explode(' ', $hosts_string));
+    }
+    $ret->$key = $hosts_array;
   }
+
+  return $ret;
+}
+
+function checkSiteHealth() {
+  // TODO URL availability
+  // TODO Update status (updates vs. security-only)
 }
 
 function printSite($site) {
-  echo  $site->ServerName . "\n";
-  echo "  ServerName:  $site->ServerName" . "\n";
-  if (isset($site->ServerAlias)) {
-    echo "  ServerAlias: $site->ServerAlias\n";
+  echo  $site->ServerName[0] . "\n";
+  echo "  ServerName:  " . implode(', ', $site->ServerName) . "\n";
+  if (isset($site->ServerAlias) && !empty($site->ServerAlias)) {
+    echo "  ServerAlias: " . implode(", ", $site->ServerAlias) . "\n";
   }
   echo "  DocumentRoot: $site->DocumentRoot\n";
   echo '  Config: ' . basename($site->vhostFile) . "\n";
