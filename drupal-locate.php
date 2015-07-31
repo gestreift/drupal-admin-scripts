@@ -31,7 +31,7 @@ foreach($argv as $argument) {
 
 // CSV header
 if ($csv) {
-  echo "ServerName;ServerAlias;DocumentRoot;VHostConfig\n";
+  echo "VHostConfig;ServerName;ServerAlias;DocumentRoot\n";
 }
 
 $files = scandir($path);
@@ -181,15 +181,15 @@ function hostnamesToString($hostnames, $site) {
 }
 
 function printSiteToCSV($site) {
-  echo  $site->ServerName . ";";
+  echo basename($site->vhostFile) . ";";
+  echo hostnamesToString($site->ServerName, $site) . ";";
   if (isset($site->ServerAlias)) {
-    echo "$site->ServerAlias;";
+    echo hostnamesToString($site->ServerAlias, $site) . ';';
   }
   else {
     echo ';';
   }
   echo "$site->DocumentRoot;";
-  echo basename($site->vhostFile) . ";";
 }
 
 function usage() {
