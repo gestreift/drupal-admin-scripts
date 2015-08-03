@@ -9,7 +9,14 @@
 // TODO: --group-by-pattern=zebrarchive
 //       will sort vhosts by zebrarchive = 0/1
 
+// TODO Username in $site object
+// TODO Guess best hostnames:
+//      - Check redirects - still on this machine after redirect?
+//      - Example: Primary: www.myproject.com
+//                 Other hostnames: myproject.com, myproject.internaldomain.com, ...
 // TODO Update status (updates vs. security-only)
+// TODO Custom Drush Command via arguments
+// TODO Filter hostnames (like heinlein-hosting.de)
 
 if (!isset($argv) || !isset($argv[1])) {
   usage();
