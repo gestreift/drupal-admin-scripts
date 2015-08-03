@@ -40,7 +40,7 @@ foreach($argv as $argument) {
 
 // CSV header
 if ($csv) {
-  echo "VHostConfig;ServerName;ServerAlias;DocumentRoot\n";
+  echo "VHostConfig;ServerName;ServerAlias;DocumentRoot;User;Group\n";
 }
 
 $files = scandir($path);
@@ -74,8 +74,9 @@ function parseVhostFile($file) {
 
   $patterns = array(
     'ServerName'    => '/ServerName\s+([A-Z0-9a-z\-\.]+)/',
-    'ServerAlias'   => '/ServerAlias\s+([A-Z0-9a-z\-\. ]+)/',
-    'DocumentRoot'  => '/DocumentRoot\s+(.+)/'
+    'ServerAlias'   => '/^\s+[^#]\s+ServerAlias\s+([A-Z0-9a-z\-\. ]+)/',
+    'DocumentRoot'  => '/DocumentRoot\s+(.+)/',
+    'User'  => '/AssignUserID\s+([\w\-\.]+)\s+([\w\-\.]+)/',
   );
 
   // Skip comments in config file.
@@ -87,6 +88,9 @@ function parseVhostFile($file) {
       // ServerName & ServerAlias as an array as one file can have multiple vhosts.
       if ($key == 'ServerName' || $key == 'ServerAlias') {
         $site->$key = $matches[1];
+      }
+      else if ( $key == 'User' && isset($matches[2]) ) {
+        $site->Group = $matches[2][0];
       }
       if (!isset($site->$key)) {
         $site->$key = $matches[1][0];
@@ -115,6 +119,8 @@ function parseVhostFile($file) {
     }
     $site->$key = $hosts_array;
   }
+
+
 
   return $site;
 }
@@ -171,6 +177,12 @@ function printSite($site) {
   }
   echo "  DocumentRoot: $site->DocumentRoot\n";
   echo '  Config: ' . basename($site->vhostFile) . "\n";
+  if (isset($site->Group)) {
+    echo '  User: ' . $site->User . "\n";
+  }
+  if (isset($site->Group)) {
+    echo '  Group: ' . $site->Group . "\n";
+  }
 }
 
 /**
@@ -184,7 +196,7 @@ function printSite($site) {
 function hostnamesToString($hostnames, $site) {
   $response_ok = array('200');
   foreach($hostnames as &$host) {
-    if ( !in_array($site->health->hosts[$host], $response_ok) ) {
+    if ( isset($site->health) && !in_array($site->health->hosts[$host], $response_ok) ) {
       $host .= '[' . $site->health->hosts[$host] . ']';
     }
   }
@@ -201,6 +213,12 @@ function printSiteToCSV($site) {
     echo ';';
   }
   echo "$site->DocumentRoot;";
+  if (isset($site->Group)) {
+    echo $site->User . ";";
+  }
+  if (isset($site->Group)) {
+    echo $site->Group . ";";
+  }
 }
 
 function usage() {
