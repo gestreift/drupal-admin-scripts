@@ -78,6 +78,9 @@ function parseVhostFile($file) {
     'DocumentRoot'  => '/DocumentRoot\s+(.+)/'
   );
 
+  // Skip comments in config file.
+  $contents = preg_replace("/\s*#.+/", "", $contents);
+
   foreach ($patterns as $key => $pattern) {
     // Search, and store all matching occurences in $matches
     if(preg_match_all($pattern, $contents, $matches)){
