@@ -73,8 +73,8 @@ function parseVhostFile($file) {
   $contents = file_get_contents($file);
 
   $patterns = array(
-    'ServerName'    => '/ServerName\s+([A-Z0-9a-z\-\.]+)/',
-    'ServerAlias'   => '/^\s+[^#]\s+ServerAlias\s+([A-Z0-9a-z\-\. ]+)/',
+    'ServerName'    => '/ServerName\s+([\w\-\. ]+)/',
+    'ServerAlias'   => '/ServerAlias\s+([\w\-\. ]+)/',
     'DocumentRoot'  => '/DocumentRoot\s+(.+)/',
     'User'  => '/AssignUserID\s+([\w\-\.]+)\s+([\w\-\.]+)/',
   );
