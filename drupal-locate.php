@@ -15,7 +15,8 @@
 //      - Example: Primary: www.myproject.com
 //                 Other hostnames: myproject.com, myproject.internaldomain.com, ...
 // TODO Update status (updates vs. security-only)
-// TODO Custom Drush Command via arguments
+// TODO Custom Drush Command via arguments (e.g. cron)
+// TODO --fix-file-permissions
 // TODO Filter hostnames (like heinlein-hosting.de)
 
 if (!isset($argv) || !isset($argv[1])) {
