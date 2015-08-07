@@ -26,10 +26,14 @@ if (!isset($argv) || !isset($argv[1])) {
 
 $conf = new stdClass();
 $conf->csv = FALSE;
+$conf->testHostnames = FALSE;
 
 foreach ($argv as $arg) {
   if ($arg == '--csv') {
     $conf->csv = TRUE;
+  }
+  else if ($arg == '--test-hostnames') {
+    $conf->testHostnames = TRUE;
   }
   else if (file_exists($arg)) {
     $path = $arg;
@@ -45,7 +49,9 @@ $files = scandir($path);
 $count = 0;
 foreach($files as $filename) {
   if ($site = parseVhostFile($path . '/' . $filename)) {
-    checkSiteHealth($site);
+    if ($conf->testHostnames) {
+      checkSiteHealth($site);
+    }
 
     if ($conf->csv) {
       printSiteToCSV($site);
@@ -221,5 +227,5 @@ function printSiteToCSV($site) {
 
 function usage() {
   echo "Usage:\n";
-  echo '  ' . basename(__FILE__) . ' [path-to-apache-vhost-files] --csv' . "\n";
+  echo '  ' . basename(__FILE__) . ' [path-to-apache-vhost-files] --csv --test-hostnames' . "\n";
 }
