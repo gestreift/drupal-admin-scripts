@@ -40,6 +40,14 @@ foreach ($argv as $count => $arg) {
   else if ($arg == '--test-hostnames') {
     $conf->testHostnames = TRUE;
   }
+  else if (strstr($arg, '--exec=')) {
+    $matches = array();
+    preg_match_all('/--exec=(.+)/', $arg, $matches);
+    if (isset($matches[1])) {
+      $conf->exec = $matches[1][0];
+    }
+    //print_r($matches);
+  }
   else if (file_exists($arg)) {
     $path = $arg;
   }
@@ -69,6 +77,13 @@ foreach($files as $filename) {
     }
     else {
       printSite($site);
+    }
+
+    if (isset($conf->exec)) {
+      $cur_path = getcwd();
+      chdir ($site->DocumentRoot);
+      echo shell_exec($conf->exec);
+      chdir($cur_path);
     }
 
     echo "\n";
@@ -238,5 +253,5 @@ function printSiteToCSV($site) {
 
 function usage() {
   echo "Usage:\n";
-  echo '  ' . basename(__FILE__) . ' [path-to-apache-vhost-files] --csv --test-hostnames' . "\n";
+  echo '  ' . basename(__FILE__) . ' [path-to-apache-vhost-files] --csv --test-hostnames --exec=your_command' . "\n";
 }
