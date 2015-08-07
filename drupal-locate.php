@@ -24,23 +24,20 @@ if (!isset($argv) || !isset($argv[1])) {
   return;
 }
 
-// Get vhost path from command line argument
-$path = $argv[1];
-if (!file_exists($path)) {
-  echo "Directory does not exist.\n";
-  return;
-}
+$conf = new stdClass();
+$conf->csv = FALSE;
 
-// Process additional cmd parameters
-$csv = FALSE;
-foreach($argv as $argument) {
-  if ($argument == '--csv') {
-    $csv = TRUE;
+foreach ($argv as $arg) {
+  if ($arg == '--csv') {
+    $conf->csv = TRUE;
+  }
+  else if (file_exists($arg)) {
+    $path = $arg;
   }
 }
 
 // CSV header
-if ($csv) {
+if ($conf->csv) {
   echo "VHostConfig;ServerName;ServerAlias;DocumentRoot;User;Group\n";
 }
 
@@ -50,7 +47,7 @@ foreach($files as $filename) {
   if ($site = parseVhostFile($path . '/' . $filename)) {
     checkSiteHealth($site);
 
-    if ($csv) {
+    if ($conf->csv) {
       printSiteToCSV($site);
     }
     else {
@@ -62,7 +59,7 @@ foreach($files as $filename) {
   }
 }
 
-if (!$csv) {
+if (!$conf->csv) {
   echo "Counting $count sites.\n";
 }
 
