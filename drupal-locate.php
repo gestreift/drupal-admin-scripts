@@ -28,7 +28,12 @@ $conf = new stdClass();
 $conf->csv = FALSE;
 $conf->testHostnames = FALSE;
 
-foreach ($argv as $arg) {
+foreach ($argv as $count => $arg) {
+  // Skip first argument. This is the script's path.
+  if ($count == 0) {
+    continue;
+  }
+
   if ($arg == '--csv') {
     $conf->csv = TRUE;
   }
@@ -38,6 +43,12 @@ foreach ($argv as $arg) {
   else if (file_exists($arg)) {
     $path = $arg;
   }
+}
+
+if (!isset($path) ) {
+  echo "Please provide a valid path of your vhost config directory.\n";
+  usage();
+  return;
 }
 
 // CSV header
