@@ -71,13 +71,30 @@ foreach($files as $filename) {
       checkSiteHealth($site);
     }
 
+    // Execute a command for each site.
     if (isset($conf->exec)) {
-      $hostnames = hostnamesToString($site->ServerName, $site);
-      echo "For $hostnames in $site->DocumentRoot:\n";
-
+      // We go into the document root, execute the command and then return to the current path.
       $cur_path = getcwd();
       chdir ($site->DocumentRoot);
-      echo shell_exec($conf->exec);
+
+      // Change user if the vhost defines a specific user.
+      $sudo_prefix = '';
+      if (isset($site->Group)) {
+        $sudo_prefix = 'sudo sudo -u ' . $site->Group . ' ';
+      }
+      else if (isset($site->User)) {
+        $sudo_prefix = 'sudo sudo -u ' . $site->User . ' ';
+      }
+
+      // Execute command
+      $hostnames = hostnamesToString($site->ServerName, $site);
+      echo "------------------------------------------------\n";
+      echo "For $hostnames in $site->DocumentRoot:\n";
+      echo "Execute " . $sudo_prefix . $conf->exec . "\n";
+      echo "------------------------------------------------\n";
+      echo shell_exec($sudo_prefix . $conf->exec);
+
+      // Return to original path.
       chdir($cur_path);
     }
     else if ($conf->csv) {
