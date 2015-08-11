@@ -3,7 +3,7 @@
 /**
  * Find running websites in apache vhost configuration.
  *
- * Usage example: drupal-locate.php /etc/apache2/sites-enabled [--csv]
+ * Usage example: drupal-locate.php [path-to-apache-vhost-files] --csv --test-hostnames --exec=your_command
  */
 
 // TODO: --group-by-pattern=zebrarchive
@@ -46,7 +46,6 @@ foreach ($argv as $count => $arg) {
     if (isset($matches[1])) {
       $conf->exec = $matches[1][0];
     }
-    //print_r($matches);
   }
   else if (file_exists($arg)) {
     $path = $arg;
@@ -72,18 +71,20 @@ foreach($files as $filename) {
       checkSiteHealth($site);
     }
 
-    if ($conf->csv) {
-      printSiteToCSV($site);
-    }
-    else {
-      printSite($site);
-    }
-
     if (isset($conf->exec)) {
+      $hostnames = hostnamesToString($site->ServerName, $site);
+      echo "For $hostnames in $site->DocumentRoot:\n";
+
       $cur_path = getcwd();
       chdir ($site->DocumentRoot);
       echo shell_exec($conf->exec);
       chdir($cur_path);
+    }
+    else if ($conf->csv) {
+      printSiteToCSV($site);
+    }
+    else {
+      printSite($site);
     }
 
     echo "\n";
