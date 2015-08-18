@@ -2,12 +2,40 @@
 
 Scripts that let you manage many drupal sites at once. The most recent is ``drupal-locate.php``. The rest is a little obsolete and poorly documented.
 
-## Usage
+## Manage many drupal sites
 
-    # Get a list of all your drupal sites
+Use drupal-locate.php if you want to manage all your active drupal sites. Just run
+``./drupal-locate.php /etc/apache2/sites-enabled/`` to get a full list of your vhosts
+and their configuration.
+
+Example:
+
+    $ ./drupal-locate.php /etc/apache2/sites-enabled/
+
+    localhost
+      ServerName:  localhost
+      DocumentRoot: /var/www/
+      Config: 000-default
+
+    myproject1.localhost
+      ServerName:  myproject1.localhost
+      DocumentRoot: /var/www/myproject1
+      Config: myproject1
+
+    myproject2.localhost
+      ServerName:  myproject2.localhost
+      ServerAlias: myproject2.example.com, myproject2
+      DocumentRoot: /home/user/development/myproject2/htdocs
+      Config: myproject2
+
+    ...
+
+### Usage
+
+    # Get a list of all your vhosts and their configuration
     ./drupal-locate.php /etc/apache2/sites-enabled/
 
-    # Export your drupal sites to php
+    # Export your vhosts to php
     ./drupal-locate.php --csv /etc/apache2/sites-enabled/  > /tmp/export.csv
 
     # Run a custom command on each site
