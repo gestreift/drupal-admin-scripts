@@ -25,9 +25,12 @@ if (!isset($argv) || !isset($argv[1])) {
   return;
 }
 
+
+// Parse command line arguments
 $conf = new stdClass();
 $conf->csv = FALSE;
 $conf->testHostnames = FALSE;
+$conf->sudo = FALSE;
 
 foreach ($argv as $count => $arg) {
   // Skip first argument. This is the script's path.
@@ -47,6 +50,9 @@ foreach ($argv as $count => $arg) {
     if (isset($matches[1])) {
       $conf->exec = $matches[1][0];
     }
+  }
+  else if ($arg == '--sudo') {
+    $conf->sudo = TRUE;
   }
   else if (file_exists($arg)) {
     $path = $arg;
@@ -77,8 +83,12 @@ foreach($files as $filename) {
       $hostnames = hostnamesToString($site->ServerName, $site);
       echo "------------------------------------------------\n";
       echo "For $hostnames in $site->DocumentRoot:\n";
-      $result = executeCommand($conf->exec, $site);
-      echo "Executing $result->command\n";
+      $result = executeCommand($conf->exec, $site, $conf->sudo);
+      echo "Executing $result->command";
+      if (isset($result->sudo_user)) {
+        echo " (as user $result->sudo_user)";
+      }
+      echo "\n";
       echo $result->output;
       echo "------------------------------------------------\n";
     }
@@ -225,16 +235,17 @@ function executeCommand($command, $site, $sudo = FALSE) {
   $sudo_prefix = '';
   if ($sudo) {
     if (isset($site->Group)) {
-      $sudo_prefix = 'sudo sudo -u ' . $site->Group . ' ';
+      $result->sudo_user = $site->Group;
     }
     else if (isset($site->User)) {
-      $sudo_prefix = 'sudo sudo -u ' . $site->User . ' ';
+      $result->sudo_user = $site->User;
     }
   }
 
   // Execute command
   $hostnames = hostnamesToString($site->ServerName, $site);
-  $result->command = $sudo_prefix . $command;
+  $result->command = $command;
+  $sudo_prefix = isset($result->sudo_user) ? 'sudo sudo -u ' . $result->sudo_user . ' ' : '';
   $result->output = shell_exec($sudo_prefix . $command);
 
   // Return to original path.
@@ -297,5 +308,5 @@ function printSiteToCSV($site) {
 
 function usage() {
   echo "Usage:\n";
-  echo '  ' . basename(__FILE__) . ' [path-to-apache-vhost-files] --csv --test-hostnames --exec=your_command' . "\n";
+  echo '  ' . basename(__FILE__) . ' [path-to-apache-vhost-files] --csv --test-hostnames --exec="your_command" --sudo' . "\n";
 }
