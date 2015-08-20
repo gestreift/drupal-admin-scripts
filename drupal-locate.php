@@ -74,29 +74,13 @@ foreach($files as $filename) {
 
     // Execute a command for each site.
     if (isset($conf->exec)) {
-      // We go into the document root, execute the command and then return to the current path.
-      $cur_path = getcwd();
-      chdir ($site->DocumentRoot);
-
-      // Change user if the vhost defines a specific user.
-      $sudo_prefix = '';
-      if (isset($site->Group)) {
-        $sudo_prefix = 'sudo sudo -u ' . $site->Group . ' ';
-      }
-      else if (isset($site->User)) {
-        $sudo_prefix = 'sudo sudo -u ' . $site->User . ' ';
-      }
-
-      // Execute command
       $hostnames = hostnamesToString($site->ServerName, $site);
       echo "------------------------------------------------\n";
       echo "For $hostnames in $site->DocumentRoot:\n";
-      echo "Execute " . $sudo_prefix . $conf->exec . "\n";
+      $result = executeCommand($conf->exec, $site);
+      echo "Executing $result->command\n";
+      echo $result->output;
       echo "------------------------------------------------\n";
-      echo shell_exec($sudo_prefix . $conf->exec);
-
-      // Return to original path.
-      chdir($cur_path);
     }
     else if ($conf->csv) {
       printSiteToCSV($site);
@@ -216,6 +200,47 @@ function checkSiteHosts($site) {
   }
 
   return $host_health;
+}
+
+/**
+ * Execute a shell command for the given site.
+ *
+ * @param string $command
+ *        Shell command, like 'ls' or 'drush status'
+ * @param object $site
+ * @param boolean $sudo
+ *        TRUE if the command will be executed as the user defined in $site.
+ *
+ * @return object
+ *         Executed command and output from shell command.
+ */
+function executeCommand($command, $site, $sudo = FALSE) {
+  $result = new stdClass();
+
+  // We go into the document root, execute the command and then return to the current path.
+  $cur_path = getcwd();
+  chdir ($site->DocumentRoot);
+
+  // Change user if the vhost defines a specific user.
+  $sudo_prefix = '';
+  if ($sudo) {
+    if (isset($site->Group)) {
+      $sudo_prefix = 'sudo sudo -u ' . $site->Group . ' ';
+    }
+    else if (isset($site->User)) {
+      $sudo_prefix = 'sudo sudo -u ' . $site->User . ' ';
+    }
+  }
+
+  // Execute command
+  $hostnames = hostnamesToString($site->ServerName, $site);
+  $result->command = $sudo_prefix . $command;
+  $result->output = shell_exec($sudo_prefix . $command);
+
+  // Return to original path.
+  chdir($cur_path);
+
+  return $result;
 }
 
 function printSite($site) {
