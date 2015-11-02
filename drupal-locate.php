@@ -67,7 +67,7 @@ if (!isset($path) ) {
 
 // CSV header
 if ($conf->csv) {
-  echo "VHostConfig;ServerName;ServerAlias;DocumentRoot;User;Group\n";
+  echo "VHostConfig;ServerName;ServerAlias;DocumentRoot;User;Group;Execute output\n";
 }
 
 $files = scandir($path);
@@ -79,7 +79,7 @@ foreach($files as $filename) {
     }
 
     // Execute a command for each site.
-    if (isset($conf->exec)) {
+    if (isset($conf->exec) && !$conf->csv) {
       $hostnames = hostnamesToString($site->ServerName, $site);
       echo "------------------------------------------------\n";
       echo "For $hostnames in $site->DocumentRoot:\n";
@@ -91,6 +91,15 @@ foreach($files as $filename) {
       echo "\n";
       echo $result->output;
       echo "------------------------------------------------\n";
+    }
+    else if (isset($conf->exec)) {
+      $hostnames = hostnamesToString($site->ServerName, $site);
+      $result = executeCommand($conf->exec, $site, $conf->sudo);
+      if (isset($result->sudo_user)) {
+        $result->output .= "\n (as user $result->sudo_user)";
+      }
+      $site->execOutput = $result->output;
+      printSiteToCSV($site);
     }
     else if ($conf->csv) {
       printSiteToCSV($site);
@@ -305,8 +314,20 @@ function printSiteToCSV($site) {
   if (isset($site->Group)) {
     echo $site->User . ";";
   }
+  else {
+    echo ";";
+  }
   if (isset($site->Group)) {
     echo $site->Group . ";";
+  }
+  else {
+    echo ";";
+  }
+  if (isset($site->execOutput)) {
+    echo '"' . $site->execOutput . '";';
+  }
+  else {
+    echo ";";
   }
 }
 
