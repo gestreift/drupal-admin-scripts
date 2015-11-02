@@ -246,6 +246,10 @@ function executeCommand($command, $site, $sudo = FALSE) {
   $hostnames = hostnamesToString($site->ServerName, $site);
   $result->command = $command;
   $sudo_prefix = isset($result->sudo_user) ? 'sudo sudo -u ' . $result->sudo_user . ' ' : '';
+  // Check if the command is in a relative path.
+  if (substr($command, 0,1) != '/' && file_exists($cur_path . '/' . $command)) {
+    $command = $cur_path . '/' . $command;
+  }
   $result->output = shell_exec($sudo_prefix . $command);
 
   // Return to original path.
