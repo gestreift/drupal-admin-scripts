@@ -127,7 +127,7 @@ function parseVhostFile($file) {
   $patterns = array(
     'ServerName'    => '/ServerName\s+([\w\-\. ]+)/',
     'ServerAlias'   => '/ServerAlias\s+([\w\-\. ]+)/',
-    'DocumentRoot'  => '/DocumentRoot\s+(.+)/',
+    'DocumentRoot'  => '/DocumentRoot[\s\"]+([\w\-\/]+)/',
     'User'  => '/AssignUserID\s+([\w\-\.]+)\s+([\w\-\.]+)/',
   );
 
