@@ -42,5 +42,8 @@ CVS
 # Netbeans stuff (Added by Lot)
 nbproject
 
+# PhpStorm
+.idea
+
 # google auth files
 /google*.html
