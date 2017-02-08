@@ -2,6 +2,13 @@
 <?php
 
 /**
+ * Requires pear Config parser.
+ * Install via sudo pear install Config
+ */
+require_once 'Config.php';
+
+
+/**
  * Find running websites in apache vhost configuration.
  *
  * Usage example: drupal-locate.php [path-to-apache-vhost-files] --csv --test-hostnames --exec=your_command
@@ -121,31 +128,43 @@ function parseVhostFile($file) {
   $site = new stdClass();
   $site->vhostFile = $file;
 
-  // Get the file contents, assuming the file to be readable (and exist)
-  $contents = file_get_contents($file);
+  if(!is_file($file)) {
+    return FALSE;
+  }
 
-  $patterns = array(
-    'ServerName'    => '/ServerName\s+([\w\-\. ]+)/',
-    'ServerAlias'   => '/ServerAlias\s+([\w\-\. ]+)/',
-    'DocumentRoot'  => '/DocumentRoot[\s\"]+([\w\-\/]+)/',
-    'User'  => '/AssignUserID\s+([\w\-\.]+)\s+([\w\-\.]+)/',
-  );
+  $conf = new Config();
+  $root = $conf->parseConfig($file, 'apache');
+  if (PEAR::isError($root)) {
+      echo 'Error reading config: ' . $root->getMessage() . "\n";
+      exit(1);
+  }
 
-  // Skip comments in config file.
-  $contents = preg_replace("/\s*#.+/", "", $contents);
+  // We want to consider only these apache directives. Discard all other.
+  $allowedDirectives = array('ServerName', 'DocumentRoot', 'ServerAlias', 'AssignUserID');
 
-  foreach ($patterns as $key => $pattern) {
-    // Search, and store all matching occurences in $matches
-    if(preg_match_all($pattern, $contents, $matches)){
-      // ServerName & ServerAlias as an array as one file can have multiple vhosts.
-      if ($key == 'ServerName' || $key == 'ServerAlias') {
-        $site->$key = $matches[1];
-      }
-      else if ( $key == 'User' && isset($matches[2]) ) {
-        $site->Group = $matches[2][0];
-      }
-      if (!isset($site->$key)) {
-        $site->$key = $matches[1][0];
+  // Parse vhost section.
+  // TODO: There can be multiple VirtualHosts
+  if ($vhostConfig = $root->getChild()) {
+    $directiveType = $vhostConfig->getName();
+    if ($directiveType == 'VirtualHost') {
+      $maxCount = $vhostConfig->countChildren();
+      for ($i = 0; $i < $maxCount; $i++) {
+        $item = $vhostConfig->getChild($i);
+        if (!$item) {
+          continue;
+        }
+        $itemType = $item->getType();
+        $itemName = $item->getName();
+        if ($itemType == 'directive' && in_array($itemName, $allowedDirectives) ) {
+          if ($itemName == 'AssignUserID') {
+            // Replace whatever space and tabs characters by space.
+            $assignUserID = preg_replace('/\s+/', ' ', $item->content);
+            $userGroup = explode(' ', $assignUserID);
+            $site->User = $userGroup[0];
+            $site->Group = $userGroup[1];
+          }
+          $site->{$item->name} = $item->content;
+        }
       }
     }
   }
@@ -165,14 +184,8 @@ function parseVhostFile($file) {
       continue;
     }
 
-    foreach($site->$key as $hosts_string) {
-      // Use regex instead of explode()
-      $hosts_array = array_merge($hosts_array, explode(' ', $hosts_string));
-    }
-    $site->$key = $hosts_array;
+    $site->$key = explode(' ', $site->$key);
   }
-
-
 
   return $site;
 }
