@@ -139,9 +139,6 @@ function parseVhostFile($file) {
       exit(1);
   }
 
-  // We want to consider only these apache directives. Discard all other.
-  $allowedDirectives = array('ServerName', 'DocumentRoot', 'ServerAlias', 'AssignUserID');
-
   // Parse vhost section.
   // TODO: There can be multiple VirtualHosts
   if ($vhostConfig = $root->getChild()) {
@@ -153,18 +150,7 @@ function parseVhostFile($file) {
         if (!$item) {
           continue;
         }
-        $itemType = $item->getType();
-        $itemName = $item->getName();
-        if ($itemType == 'directive' && in_array($itemName, $allowedDirectives) ) {
-          if ($itemName == 'AssignUserID') {
-            // Replace whatever space and tabs characters by space.
-            $assignUserID = preg_replace('/\s+/', ' ', $item->content);
-            $userGroup = explode(' ', $assignUserID);
-            $site->User = $userGroup[0];
-            $site->Group = $userGroup[1];
-          }
-          $site->{$item->name} = $item->content;
-        }
+        processVhostItem($item, $site);
       }
     }
   }
@@ -174,20 +160,38 @@ function parseVhostFile($file) {
     return FALSE;
   }
 
-  // Convert space separated hosts into flat array because we didn't figure out
-  // how to get a flat array with regex (like /ServerAlias ((HOSTPATTERN+ )+)/.
-  $explode_keys = array('ServerName', 'ServerAlias');
-  foreach ($explode_keys as $key) {
-    $hosts_array = array();
-
-    if (!isset($site->$key)) {
-      continue;
-    }
-
-    $site->$key = explode(' ', $site->$key);
-  }
-
   return $site;
+}
+
+/**
+ * Process a vhost item and add to the site object.
+ *
+ * @param $item         Config item.
+ * @param $site         Site description that will be altered.
+ */
+function processVhostItem($item, &$site) {
+  // We want to consider only these apache directives. Discard all other.
+  $allowedDirectives      = array('ServerName', 'DocumentRoot', 'ServerAlias', 'AssignUserID');
+  $multiValueDirectives   = array('ServerName', 'ServerAlias');
+
+  $itemType = $item->getType();
+  $itemName = $item->getName();
+  if ($itemType == 'directive' && in_array($itemName, $allowedDirectives) ) {
+    if ($itemName == 'AssignUserID') {
+      // Replace whatever space and tabs characters by space.
+      $assignUserID = preg_replace('/\s+/', ' ', $item->content);
+      $userGroup = explode(' ', $assignUserID);
+      $site->User = $userGroup[0];
+      $site->Group = $userGroup[1];
+    }
+    else if (in_array($itemName, $multiValueDirectives)) {
+      $value = preg_replace('/\s+/', ' ', $item->content);
+      $site->{$item->name} = explode(' ', $value);
+    }
+    else {
+      $site->{$item->name} = $item->content;
+    }
+  }
 }
 
 /**
