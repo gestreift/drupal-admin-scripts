@@ -147,20 +147,7 @@ function parseVhostFile($file) {
   }
 
   // Parse vhost section.
-  // TODO: There can be multiple VirtualHosts
-  if ($vhostConfig = $root->getChild()) {
-    $directiveType = $vhostConfig->getName();
-    if ($directiveType == 'VirtualHost') {
-      $maxCount = $vhostConfig->countChildren();
-      for ($i = 0; $i < $maxCount; $i++) {
-        $item = $vhostConfig->getChild($i);
-        if (!$item) {
-          continue;
-        }
-        processVhostItem($item, $site);
-      }
-    }
-  }
+  processConfigTree($root, $site);
 
   // A site needs to have at least DocumentRoot and ServerName.
   if (empty($site->ServerName) || empty($site->DocumentRoot)) {
@@ -169,6 +156,30 @@ function parseVhostFile($file) {
 
   return $site;
 }
+
+/**
+ * Process a whole or a partial apache config tree recursively.
+ *
+ * @param \Config_Container $config
+ *     Contains vhost configuration.
+ * @param $site
+ *     Site description that will be altered.
+ */
+function processConfigTree(Config_Container $config, &$site) {
+  $type = $config->getName();
+  if ($type == 'VirtualHost' || $type == 'root') {
+    $maxCount = $config->countChildren();
+    for ($childIndex = 0; $childIndex < $maxCount; $childIndex++) {
+      $child = $config->getChild($childIndex);
+      processConfigTree($child, $site);
+    }
+  }
+  else {
+    processVhostItem($config, $site);
+  }
+}
+
+
 
 /**
  * Process a vhost item and add to the site object.
