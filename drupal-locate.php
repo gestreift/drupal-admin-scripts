@@ -80,43 +80,49 @@ if ($conf->csv) {
 $files = scandir($path);
 $count = 0;
 foreach($files as $filename) {
-  if ($site = parseVhostFile($path . '/' . $filename)) {
-    if ($conf->testHostnames) {
-      checkSiteHealth($site);
-    }
-
-    // Execute a command for each site.
-    if (isset($conf->exec) && !$conf->csv) {
-      $hostnames = hostnamesToString($site->ServerName, $site);
-      echo "------------------------------------------------\n";
-      echo "For $hostnames in $site->DocumentRoot:\n";
-      $result = executeCommand($conf->exec, $site, $conf->sudo);
-      echo "Executing $result->command";
-      if (isset($result->sudo_user)) {
-        echo " (as user $result->sudo_user)";
+  if ($sites = parseVhostFile($path . '/' . $filename)) {
+    foreach($sites as $site) {
+      if ($conf->testHostnames) {
+        checkSiteHealth($site);
       }
+
+      // Execute a command for each site.
+      if (isset($conf->exec) && !$conf->csv) {
+        $hostnames = hostnamesToString($site->ServerName, $site);
+        echo "------------------------------------------------\n";
+        echo "For $hostnames in $site->DocumentRoot:\n";
+        $result = executeCommand($conf->exec, $site, $conf->sudo);
+        echo "Executing $result->command";
+        if (isset($result->sudo_user)) {
+          echo " (as user $result->sudo_user)";
+        }
+        echo "\n";
+        echo $result->output;
+        echo "------------------------------------------------\n";
+      }
+      else {
+        if (isset($conf->exec)) {
+          $hostnames = hostnamesToString($site->ServerName, $site);
+          $result = executeCommand($conf->exec, $site, $conf->sudo);
+          if (isset($result->sudo_user)) {
+            $result->output .= "\n (as user $result->sudo_user)";
+          }
+          $site->execOutput = $result->output;
+          printSiteToCSV($site);
+        }
+        else {
+          if ($conf->csv) {
+            printSiteToCSV($site);
+          }
+          else {
+            printSite($site);
+          }
+        }
+      }
+
       echo "\n";
-      echo $result->output;
-      echo "------------------------------------------------\n";
+      $count++;
     }
-    else if (isset($conf->exec)) {
-      $hostnames = hostnamesToString($site->ServerName, $site);
-      $result = executeCommand($conf->exec, $site, $conf->sudo);
-      if (isset($result->sudo_user)) {
-        $result->output .= "\n (as user $result->sudo_user)";
-      }
-      $site->execOutput = $result->output;
-      printSiteToCSV($site);
-    }
-    else if ($conf->csv) {
-      printSiteToCSV($site);
-    }
-    else {
-      printSite($site);
-    }
-
-    echo "\n";
-    $count++;
   }
 }
 
@@ -126,60 +132,79 @@ if (!$conf->csv) {
 
 
 /**
- * Parse a vhost file. Returns a site object describing the host.
+ * Parse a vhost file. Returns sites in the given config file.
  *
  * @param $file             Filename of the apache vhost file.
- * @return bool|\stdClass   Site description as an object. False on parse error.
+ * @return array|bool       Array of site descriptions. False on parse error.
  */
-function parseVhostFile($file) {
-  $site = new stdClass();
-  $site->vhostFile = $file;
+function parseVhostFile($filename) {
 
-  if(!is_file($file)) {
+  if(!is_file($filename)) {
     return FALSE;
   }
 
   $conf = new Config();
-  $root = $conf->parseConfig($file, 'apache');
+  $root = $conf->parseConfig($filename, 'apache');
   if (PEAR::isError($root)) {
       echo 'Error reading config: ' . $root->getMessage() . "\n";
       exit(1);
   }
 
-  // Parse vhost section.
-  processConfigTree($root, $site);
+  $sites = processConfigTree($root, $filename);
+  return $sites;
+}
 
-  // A site needs to have at least DocumentRoot and ServerName.
-  if (empty($site->ServerName) || empty($site->DocumentRoot)) {
-    return FALSE;
+/**
+ * Process a whole or a partial apache config tree.
+ *
+ * We assume VirtualHost records in the level of 1st generation children.
+ *
+ * @param \Config_Container $config
+ *     Contains vhost configuration.
+ *
+ * @return Array with site descriptions.
+ */
+function processConfigTree(Config_Container $config, $filename) {
+  $sites = array();
+
+  $maxCount = $config->countChildren();
+  for ($childIndex = 0; $childIndex < $maxCount; $childIndex++) {
+    $child = $config->getChild($childIndex);
+    $type = $child->getName();
+    if ($type != 'VirtualHost') {
+      continue;
+    }
+
+    $site = processVirtualHost($child);
+
+    // Validation: A site needs to have at least a ServerName plus a
+    // - DocumentRoot or a
+    // - Redirect
+    if (empty($site->ServerName)) {
+      continue;
+    }
+    else if ( empty($site->DocumentRoot) && empty($site->Redirect) ) {
+      continue;
+    }
+
+    $site->sourceFile = $filename;
+    $sites[] = $site;
+  }
+
+  return $sites;
+}
+
+function processVirtualHost(Config_Container $config) {
+  $site = new stdClass();
+
+  $maxCount = $config->countChildren();
+  for ($childIndex = 0; $childIndex < $maxCount; $childIndex++) {
+    $child = $config->getChild($childIndex);
+    processVhostItem($child, $site);
   }
 
   return $site;
 }
-
-/**
- * Process a whole or a partial apache config tree recursively.
- *
- * @param \Config_Container $config
- *     Contains vhost configuration.
- * @param $site
- *     Site description that will be altered.
- */
-function processConfigTree(Config_Container $config, &$site) {
-  $type = $config->getName();
-  if ($type == 'VirtualHost' || $type == 'root') {
-    $maxCount = $config->countChildren();
-    for ($childIndex = 0; $childIndex < $maxCount; $childIndex++) {
-      $child = $config->getChild($childIndex);
-      processConfigTree($child, $site);
-    }
-  }
-  else {
-    processVhostItem($config, $site);
-  }
-}
-
-
 
 /**
  * Process a vhost item and add to the site object.
@@ -189,7 +214,7 @@ function processConfigTree(Config_Container $config, &$site) {
  */
 function processVhostItem($item, &$site) {
   // We want to consider only these apache directives. Discard all other.
-  $allowedDirectives      = array('ServerName', 'DocumentRoot', 'ServerAlias', 'AssignUserID');
+  $allowedDirectives      = array('ServerName', 'DocumentRoot', 'ServerAlias', 'AssignUserID', 'Redirect');
   $multiValueDirectives   = array('ServerName', 'ServerAlias');
 
   $itemType = $item->getType();
@@ -305,11 +330,20 @@ function executeCommand($command, $site, $sudo = FALSE) {
 function printSite($site) {
   echo  $site->ServerName[0] . "\n";
   echo "  ServerName:  " . hostnamesToString($site->ServerName, $site) . "\n";
+
   if (isset($site->ServerAlias) && !empty($site->ServerAlias)) {
     echo "  ServerAlias: " . hostnamesToString($site->ServerAlias, $site) . "\n";
   }
-  echo "  DocumentRoot: $site->DocumentRoot\n";
-  echo '  Config: ' . basename($site->vhostFile) . "\n";
+
+  if (isset($site->DocumentRoot)) {
+    echo "  DocumentRoot: $site->DocumentRoot\n";
+  }
+
+  if (isset($site->Redirect)) {
+    echo "  Redirect: $site->Redirect\n";
+  }
+
+  echo '  Config: ' . basename($site->sourceFile) . "\n";
   if (isset($site->Group)) {
     echo '  User: ' . $site->User . "\n";
   }
@@ -337,7 +371,7 @@ function hostnamesToString($hostnames, $site) {
 }
 
 function printSiteToCSV($site) {
-  echo basename($site->vhostFile) . ";";
+  echo basename($site->sourceFile) . ";";
   echo hostnamesToString($site->ServerName, $site) . ";";
   if (isset($site->ServerAlias)) {
     echo hostnamesToString($site->ServerAlias, $site) . ';';
