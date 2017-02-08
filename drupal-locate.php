@@ -124,6 +124,13 @@ if (!$conf->csv) {
   echo "Counting $count sites.\n";
 }
 
+
+/**
+ * Parse a vhost file. Returns a site object describing the host.
+ *
+ * @param $file             Filename of the apache vhost file.
+ * @return bool|\stdClass   Site description as an object. False on parse error.
+ */
 function parseVhostFile($file) {
   $site = new stdClass();
   $site->vhostFile = $file;
