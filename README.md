@@ -30,6 +30,14 @@ Example:
 
     ...
 
+
+### Installation
+
+The pear library Config.php is required. Install via
+
+`sudo pear install Config`
+
+
 ### Usage
 
     # Get a list of all your vhosts and their configuration
