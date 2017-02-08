@@ -74,7 +74,7 @@ if (!isset($path) ) {
 
 // CSV header
 if ($conf->csv) {
-  echo "VHostConfig;ServerName;ServerAlias;DocumentRoot;User;Group;Execute output\n";
+  echo "VHostConfig;ServerName;ServerAlias;DocumentRoot;Redirect;User;Group;Execute output\n";
 }
 
 $files = scandir($path);
@@ -328,8 +328,13 @@ function executeCommand($command, $site, $sudo = FALSE) {
 }
 
 function printSite($site) {
+  $redirect_tag = '';
+  if (isset($site->Redirect) && !isset($site->DocumentRoot)) {
+    $redirect_tag = ' [Exclusive redirect] ';
+  }
+
   echo  $site->ServerName[0] . "\n";
-  echo "  ServerName:  " . hostnamesToString($site->ServerName, $site) . "\n";
+  echo "  ServerName:  " . hostnamesToString($site->ServerName, $site) . $redirect_tag . "\n";
 
   if (isset($site->ServerAlias) && !empty($site->ServerAlias)) {
     echo "  ServerAlias: " . hostnamesToString($site->ServerAlias, $site) . "\n";
@@ -373,25 +378,42 @@ function hostnamesToString($hostnames, $site) {
 function printSiteToCSV($site) {
   echo basename($site->sourceFile) . ";";
   echo hostnamesToString($site->ServerName, $site) . ";";
+
   if (isset($site->ServerAlias)) {
     echo hostnamesToString($site->ServerAlias, $site) . ';';
   }
   else {
     echo ';';
   }
-  echo "$site->DocumentRoot;";
+
+  if (isset($site->DocumentRoot)) {
+    echo "$site->DocumentRoot;";
+  }
+  else {
+    echo ';';
+  }
+
+  if (isset($site->Redirect)) {
+    echo "$site->Redirect;";
+  }
+  else {
+    echo ';';
+  }
+
   if (isset($site->Group)) {
     echo $site->User . ";";
   }
   else {
     echo ";";
   }
+
   if (isset($site->Group)) {
     echo $site->Group . ";";
   }
   else {
     echo ";";
   }
+
   if (isset($site->execOutput)) {
     echo '"' . $site->execOutput . '";';
   }
