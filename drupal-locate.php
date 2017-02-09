@@ -35,25 +35,33 @@ foreach ($argv as $count => $arg) {
   if ($arg == '--csv') {
     $conf->csv = TRUE;
   }
-  else if ($arg == '--test-hostnames') {
-    $conf->testHostnames = TRUE;
-  }
-  else if (strstr($arg, '--exec=')) {
-    $matches = array();
-    preg_match_all('/--exec=(.+)/', $arg, $matches);
-    if (isset($matches[1])) {
-      $conf->exec = $matches[1][0];
+  else {
+    if ($arg == '--test-hostnames') {
+      $conf->testHostnames = TRUE;
     }
-  }
-  else if ($arg == '--sudo') {
-    $conf->sudo = TRUE;
-  }
-  else if (file_exists($arg)) {
-    $path = $arg;
+    else {
+      if (strstr($arg, '--exec=')) {
+        $matches = array();
+        preg_match_all('/--exec=(.+)/', $arg, $matches);
+        if (isset($matches[1])) {
+          $conf->exec = $matches[1][0];
+        }
+      }
+      else {
+        if ($arg == '--sudo') {
+          $conf->sudo = TRUE;
+        }
+        else {
+          if (file_exists($arg)) {
+            $path = $arg;
+          }
+        }
+      }
+    }
   }
 }
 
-if (!isset($path) ) {
+if (!isset($path)) {
   echo "Please provide a valid path of your vhost config directory.\n";
   usage();
   return;
@@ -66,9 +74,9 @@ if ($conf->csv) {
 
 $files = scandir($path);
 $count = 0;
-foreach($files as $filename) {
+foreach ($files as $filename) {
   if ($sites = parseVhostFile($path . '/' . $filename)) {
-    foreach($sites as $site) {
+    foreach ($sites as $site) {
       if ($conf->testHostnames) {
         checkSiteHealth($site);
       }
@@ -126,15 +134,15 @@ if (!$conf->csv) {
  */
 function parseVhostFile($filename) {
 
-  if(!is_file($filename)) {
+  if (!is_file($filename)) {
     return FALSE;
   }
 
   $conf = new Config();
   $root = $conf->parseConfig($filename, 'apache');
   if (PEAR::isError($root)) {
-      echo 'Error reading config: ' . $root->getMessage() . "\n";
-      exit(1);
+    echo 'Error reading config: ' . $root->getMessage() . "\n";
+    exit(1);
   }
 
   $sites = processConfigTree($root, $filename);
@@ -170,8 +178,10 @@ function processConfigTree(Config_Container $config, $filename) {
     if (empty($site->ServerName)) {
       continue;
     }
-    else if ( empty($site->DocumentRoot) && empty($site->Redirect) ) {
-      continue;
+    else {
+      if (empty($site->DocumentRoot) && empty($site->Redirect)) {
+        continue;
+      }
     }
 
     $site->sourceFile = $filename;
@@ -201,12 +211,18 @@ function processVirtualHost(Config_Container $config) {
  */
 function processVhostItem($item, &$site) {
   // We want to consider only these apache directives. Discard all other.
-  $allowedDirectives      = array('ServerName', 'DocumentRoot', 'ServerAlias', 'AssignUserID', 'Redirect');
-  $multiValueDirectives   = array('ServerName', 'ServerAlias');
+  $allowedDirectives = array(
+    'ServerName',
+    'DocumentRoot',
+    'ServerAlias',
+    'AssignUserID',
+    'Redirect'
+  );
+  $multiValueDirectives = array('ServerName', 'ServerAlias');
 
   $itemType = $item->getType();
   $itemName = $item->getName();
-  if ($itemType == 'directive' && in_array($itemName, $allowedDirectives) ) {
+  if ($itemType == 'directive' && in_array($itemName, $allowedDirectives)) {
     if ($itemName == 'AssignUserID') {
       // Replace whatever space and tabs characters by space.
       $assignUserID = preg_replace('/\s+/', ' ', $item->content);
@@ -214,12 +230,14 @@ function processVhostItem($item, &$site) {
       $site->User = $userGroup[0];
       $site->Group = $userGroup[1];
     }
-    else if (in_array($itemName, $multiValueDirectives)) {
-      $value = preg_replace('/\s+/', ' ', $item->content);
-      $site->{$item->name} = explode(' ', $value);
-    }
     else {
-      $site->{$item->name} = $item->content;
+      if (in_array($itemName, $multiValueDirectives)) {
+        $value = preg_replace('/\s+/', ' ', $item->content);
+        $site->{$item->name} = explode(' ', $value);
+      }
+      else {
+        $site->{$item->name} = $item->content;
+      }
     }
   }
 }
@@ -251,14 +269,14 @@ function checkSiteHosts($site) {
   $host_health = array();
 
   $host_keys = array('ServerName', 'ServerAlias');
-  foreach($host_keys as $key) {
+  foreach ($host_keys as $key) {
     if (!isset($site->$key)) {
       continue;
     }
-    foreach($site->$key as $host) {
+    foreach ($site->$key as $host) {
       $url = 'http://' . $host;
       $handle = curl_init($url);
-      curl_setopt($handle,  CURLOPT_RETURNTRANSFER, TRUE);
+      curl_setopt($handle, CURLOPT_RETURNTRANSFER, TRUE);
       $response = curl_exec($handle);
       $httpCode = curl_getinfo($handle, CURLINFO_HTTP_CODE);
       $host_health[$host] = $httpCode;
@@ -301,14 +319,13 @@ function checkDomainTechC($site) {
   return $domains;
 }
 
-function _get_domain($hostname)
-{
+function _get_domain($hostname) {
   $hostnames = explode(".", $hostname);
-  if ( count($hostnames)<2 ) {
-    return false;
+  if (count($hostnames) < 2) {
+    return FALSE;
   }
 
-  $bottom_host_name = $hostnames[count($hostnames)-2] . "." . $hostnames[count($hostnames)-1];
+  $bottom_host_name = $hostnames[count($hostnames) - 2] . "." . $hostnames[count($hostnames) - 1];
   return $bottom_host_name;
 }
 
@@ -329,7 +346,7 @@ function executeCommand($command, $site, $sudo = FALSE) {
 
   // We go into the document root, execute the command and then return to the current path.
   $cur_path = getcwd();
-  chdir ($site->DocumentRoot);
+  chdir($site->DocumentRoot);
 
   // Change user if the vhost defines a specific user.
   $sudo_prefix = '';
@@ -337,8 +354,10 @@ function executeCommand($command, $site, $sudo = FALSE) {
     if (isset($site->Group)) {
       $result->sudo_user = $site->Group;
     }
-    else if (isset($site->User)) {
-      $result->sudo_user = $site->User;
+    else {
+      if (isset($site->User)) {
+        $result->sudo_user = $site->User;
+      }
     }
   }
 
@@ -347,7 +366,7 @@ function executeCommand($command, $site, $sudo = FALSE) {
   $result->command = $command;
   $sudo_prefix = isset($result->sudo_user) ? 'sudo sudo -u ' . $result->sudo_user . ' ' : '';
   // Check if the command is in a relative path.
-  if (substr($command, 0,1) != '/' && file_exists($cur_path . '/' . $command)) {
+  if (substr($command, 0, 1) != '/' && file_exists($cur_path . '/' . $command)) {
     $command = $cur_path . '/' . $command;
   }
   $result->output = shell_exec($sudo_prefix . $command);
@@ -364,7 +383,7 @@ function printSite($site) {
     $redirect_tag = ' [Exclusive redirect] ';
   }
 
-  echo  $site->ServerName[0] . "\n";
+  echo $site->ServerName[0] . "\n";
   echo "  ServerName:  " . hostnamesToString($site->ServerName, $site) . $redirect_tag . "\n";
 
   if (isset($site->ServerAlias) && !empty($site->ServerAlias)) {
@@ -407,15 +426,15 @@ function printDomainInfos($site) {
 /**
  * Print list of hostnames
  *
- * @param array  $hostnames
+ * @param array $hostnames
  *        List of hostnames.
  * @param object $site
  *        Site description.
  */
 function hostnamesToString($hostnames, $site) {
   $response_ok = array('200');
-  foreach($hostnames as &$host) {
-    if ( isset($site->health) && !in_array($site->health->hosts[$host], $response_ok) ) {
+  foreach ($hostnames as &$host) {
+    if (isset($site->health) && !in_array($site->health->hosts[$host], $response_ok)) {
       $host .= '[' . $site->health->hosts[$host] . ']';
     }
   }
