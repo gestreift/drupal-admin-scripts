@@ -14,19 +14,6 @@ require_once 'Config.php';
  * Usage example: drupal-locate.php [path-to-apache-vhost-files] --csv --test-hostnames --exec=your_command
  */
 
-// TODO: --group-by-pattern=zebrarchive
-//       will sort vhosts by zebrarchive = 0/1
-
-// TODO Username in $site object
-// TODO Guess best hostnames:
-//      - Check redirects - still on this machine after redirect?
-//      - Example: Primary: www.myproject.com
-//                 Other hostnames: myproject.com, myproject.internaldomain.com, ...
-// TODO Update status (updates vs. security-only)
-// TODO Custom Drush Command via arguments (e.g. cron)
-// TODO --fix-file-permissions
-// TODO Filter hostnames (like heinlein-hosting.de)
-
 if (!isset($argv) || !isset($argv[1])) {
   usage();
   return;
