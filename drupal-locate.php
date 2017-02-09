@@ -225,18 +225,19 @@ function processVhostItem($item, &$site) {
 }
 
 /**
- * Return site healt as an object.
+ * Return site health as an object.
  *
  * @param object &$site
  *        Description of the site.
  */
 function checkSiteHealth(&$site) {
-  $health = new stdClass();
-
   // Test hostname availability.
+  $health = new stdClass();
   $health->hosts = checkSiteHosts($site);
-
   $site->health = $health;
+
+  $domains = checkDomainTechC($site);
+  $site->domains = $domains;
 }
 
 /**
@@ -266,6 +267,49 @@ function checkSiteHosts($site) {
   }
 
   return $host_health;
+}
+
+/**
+ * Try to find out the hosting company managing the domain.
+ *
+ * @param $site
+ * @return stdClass
+ *   Domain info object with additional domain information.
+ *   - Heinlein (boolean) if the domain is hosted by Heinlein Support.
+ *   - TechC (string) contains name and/or contact of the hosting company.
+ */
+function checkDomainTechC($site) {
+  $domains = array();
+
+  foreach ($site->ServerName as $hostname) {
+    $domainName = _get_domain($hostname);
+    if (!$domainName) {
+      continue;
+    }
+    $cmd = "whois " . $domainName . " | grep \"Name:\|Organisation:\"";
+    $result = shell_exec($cmd);
+
+    $domainInfo = new stdClass();
+
+    $domainInfo->Heinlein = FALSE;
+    if (strstr($result, 'Heinlein')) {
+      $domainInfo->Heinlein = TRUE;
+    }
+    $domainInfo->TechC = $result;
+    $domains[$hostname] = $domainInfo;
+  }
+  return $domains;
+}
+
+function _get_domain($hostname)
+{
+  $hostnames = explode(".", $hostname);
+  if ( count($hostnames)<2 ) {
+    return false;
+  }
+
+  $bottom_host_name = $hostnames[count($hostnames)-2] . "." . $hostnames[count($hostnames)-1];
+  return $bottom_host_name;
 }
 
 /**
@@ -335,6 +379,10 @@ function printSite($site) {
     echo "  Redirect: $site->Redirect\n";
   }
 
+  if (isset($site->domains)) {
+    echo '  Domain Info: ' . printDomainInfos($site) . "\n";
+  }
+
   echo '  Config: ' . basename($site->sourceFile) . "\n";
   if (isset($site->Group)) {
     echo '  User: ' . $site->User . "\n";
@@ -342,6 +390,18 @@ function printSite($site) {
   if (isset($site->Group)) {
     echo '  Group: ' . $site->Group . "\n";
   }
+}
+
+function printDomainInfos($site) {
+  $domains = $site->domains;
+
+  $out = array();
+  foreach ($domains as $hostname => $domainInfo) {
+    $techC = str_replace("\n", ", ", $domainInfo->TechC);
+    $out[] = "$hostname => $techC";
+  }
+
+  return implode(' | ', $out);
 }
 
 /**
@@ -413,3 +473,5 @@ function usage() {
   echo "Usage:\n";
   echo '  ' . basename(__FILE__) . ' [path-to-apache-vhost-files] --csv --test-hostnames --exec="your_command" --sudo' . "\n";
 }
+
+
