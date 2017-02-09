@@ -69,7 +69,7 @@ if (!isset($path)) {
 
 // CSV header
 if ($conf->csv) {
-  echo "VHostConfig;ServerName;ServerAlias;DocumentRoot;Redirect;User;Group;Execute output\n";
+  echo "VHostConfig;ServerName;ServerAlias;HeinleinDomain;DocumentRoot;Redirect;User;Group;Execute output\n";
 }
 
 $files = scandir($path);
@@ -411,6 +411,9 @@ function printSite($site) {
   }
 }
 
+/**
+ * Print domain infos to string.
+ */
 function printDomainInfos($site) {
   $domains = $site->domains;
 
@@ -421,6 +424,22 @@ function printDomainInfos($site) {
   }
 
   return implode(' | ', $out);
+}
+
+/**
+ * Print domain infos for csv output.
+ *
+ * @return string
+ */
+function printDomainInfosCSV($site) {
+  $domains = $site->domains;
+
+  $out = array();
+  foreach ($domains as $hostname => $domainInfo) {
+    $out[] = "$domainInfo->Heinlein";
+  }
+
+  return implode('|', $out);
 }
 
 /**
@@ -447,6 +466,13 @@ function printSiteToCSV($site) {
 
   if (isset($site->ServerAlias)) {
     echo hostnamesToString($site->ServerAlias, $site) . ';';
+  }
+  else {
+    echo ';';
+  }
+
+  if (isset($site->domains)){
+    echo printDomainInfosCSV($site) . ';';
   }
   else {
     echo ';';
